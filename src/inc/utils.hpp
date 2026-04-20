@@ -17,21 +17,74 @@
 // system
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace OPERON {
 
 namespace Utils {
 
     //!\brief Compare two byte sequences in constant time
-    bool constant_time_eq(
+    inline bool constant_time_eq(
         const uint8_t* a,
         size_t a_length,
         const uint8_t* b,
         size_t b_length
-    );
+    )
+    {
+        size_t i;
+        uint8_t diff;
+
+        if (a == nullptr || b == nullptr)
+        {
+            return false;
+        }
+
+        if (a_length != b_length)
+        {
+            return false;
+        }
+
+        diff = 0;
+
+        for (i = 0; i < a_length; ++i)
+        {
+            diff |= static_cast<uint8_t>(a[i] ^ b[i]);
+        }
+
+        return diff == 0;
+    }
+
+    //!\brief Compare two byte buffers in constant time
+    inline bool constant_time_eq(
+        const std::vector<uint8_t>& a,
+        const std::vector<uint8_t>& b
+    )
+    {
+        return constant_time_eq(
+            a.data(),
+            a.size(),
+            b.data(),
+            b.size()
+        );
+    }
+
+    //!\brief Compare two strings in constant time
+    inline bool constant_time_eq(
+        const std::string& a,
+        const std::string& b
+    )
+    {
+        return constant_time_eq(
+            reinterpret_cast<const uint8_t*>(a.data()),
+            a.size(),
+            reinterpret_cast<const uint8_t*>(b.data()),
+            b.size()
+        );
+    }
 
 } // namespace Utils
 
 } // namespace OPERON
 
-#endif
+#endif // OPERON_UTILS_HPP
