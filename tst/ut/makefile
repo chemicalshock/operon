@@ -56,6 +56,12 @@ constant_time_eq_SUT.cpp.so,SRCS := \
 constant_time_eq_SUT.cpp.so,DEPS := $(OPERON_LIBS)
 constant_time_eq_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 
+X86CPPTARGETSOL += random_bytes_SUT.cpp.so
+random_bytes_SUT.cpp.so,SRCS := \
+		algos/rng/random_bytes/random_bytes.cpp
+random_bytes_SUT.cpp.so,DEPS := $(OPERON_LIBS)
+random_bytes_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+
 # ------------------------------
 # Test targets
 # ------------------------------
@@ -77,6 +83,13 @@ TEST_UTIL_CONSTANT_TIME_EQ,SRCS := test_util_constant_time_eq.cpp
 TEST_UTIL_CONSTANT_TIME_EQ,USRLIBS := constant_time_eq_SUT.cpp.so
 TEST_UTIL_CONSTANT_TIME_EQ,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 TEST_UTIL_CONSTANT_TIME_EQ,LDFLAGS =
+
+X86CPPTARGET += TEST_RNG_RANDOM_BYTES
+TEST_RNG_RANDOM_BYTES,SRCS := test_rng_random_bytes.cpp
+TEST_RNG_RANDOM_BYTES,USRLIBS := random_bytes_SUT.cpp.so
+TEST_RNG_RANDOM_BYTES,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+TEST_RNG_RANDOM_BYTES,LDFLAGS =
+
 
 # Include shocktest makefile from dep/shocktest symlink (no absolute path).
 include $(REPO_ROOT)/dep/shocktest/src/tst/ut/makefile.shocktest.mk
