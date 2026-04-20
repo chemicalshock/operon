@@ -15,12 +15,17 @@
 #include "operon.hpp"
 
 // system
+#include <algorithm>
+#include <cerrno>
 #include <cctype>
 #include <cstdlib>
 #include <exception>
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <termios.h>
+#include <unistd.h>
 
 //
 //!\brief Trim leading and trailing whitespace from a string
@@ -76,17 +81,444 @@ static std::string type_to_string(OPERON::ValueType type)
     }
 }
 
+struct CompletionResult
+{
+    size_t replace_start = 0;
+    std::vector<std::string> matches;
+    bool append_space = true;
+};
+
+struct ReadLineSession
+{
+    std::vector<std::string> history;
+};
+
+using CompletionProvider = std::function<CompletionResult(const std::string&, size_t)>;
+
+class RawTerminalMode
+{
+public:
+    RawTerminalMode()
+    {
+        if (!isatty(STDIN_FILENO) || tcgetattr(STDIN_FILENO, &m_original) != 0)
+        {
+            return;
+        }
+
+        termios raw = m_original;
+        raw.c_lflag &= static_cast<tcflag_t>(~(ECHO | ICANON));
+        raw.c_iflag &= static_cast<tcflag_t>(~IXON);
+        raw.c_cc[VMIN] = 1;
+        raw.c_cc[VTIME] = 0;
+
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &raw) == 0)
+        {
+            m_enabled = true;
+        }
+    }
+
+    ~RawTerminalMode()
+    {
+        if (m_enabled)
+        {
+            tcsetattr(STDIN_FILENO, TCSANOW, &m_original);
+        }
+    }
+
+    bool enabled() const
+    {
+        return m_enabled;
+    }
+
+private:
+    termios m_original{};
+    bool m_enabled = false;
+};
+
+//
+//!\brief Read one byte from standard input
+//
+static bool read_input_char(char& c)
+{
+    while (true)
+    {
+        const ssize_t bytes_read = read(STDIN_FILENO, &c, 1);
+
+        if (bytes_read == 1)
+        {
+            return true;
+        }
+
+        if (bytes_read == 0)
+        {
+            return false;
+        }
+
+        if (errno != EINTR)
+        {
+            return false;
+        }
+    }
+}
+
+//
+//!\brief Redraw the editable command line
+//
+static void redraw_line(const std::string& prompt, const std::string& line, size_t cursor)
+{
+    std::cout << '\r' << prompt << line << "\x1b[K";
+
+    const size_t chars_right = line.size() - cursor;
+
+    if (chars_right > 0)
+    {
+        std::cout << "\x1b[" << chars_right << "D";
+    }
+
+    std::cout.flush();
+}
+
+//
+//!\brief Return whether value starts with prefix
+//
+static bool starts_with(const std::string& value, const std::string& prefix)
+{
+    return value.size() >= prefix.size()
+        && value.compare(0, prefix.size(), prefix) == 0;
+}
+
+//
+//!\brief Return the shared prefix for a list of matches
+//
+static std::string common_prefix(const std::vector<std::string>& values)
+{
+    if (values.empty())
+    {
+        return "";
+    }
+
+    std::string prefix = values[0];
+
+    for (size_t i = 1; i < values.size(); ++i)
+    {
+        size_t count = 0;
+        const size_t limit = std::min(prefix.size(), values[i].size());
+
+        while (count < limit && prefix[count] == values[i][count])
+        {
+            ++count;
+        }
+
+        prefix.resize(count);
+    }
+
+    return prefix;
+}
+
+//
+//!\brief Find the start of the token at the cursor
+//
+static size_t current_token_start(const std::string& line, size_t cursor)
+{
+    size_t start = cursor;
+
+    while (start > 0 && !std::isspace(static_cast<unsigned char>(line[start - 1])))
+    {
+        --start;
+    }
+
+    return start;
+}
+
+//
+//!\brief Apply one tab completion attempt
+//
+static void apply_completion(
+    const std::string& prompt,
+    std::string& line,
+    size_t& cursor,
+    const CompletionProvider& completion)
+{
+    if (!completion)
+    {
+        std::cout << '\a' << std::flush;
+        return;
+    }
+
+    CompletionResult result = completion(line, cursor);
+
+    if (result.matches.empty() || result.replace_start > cursor)
+    {
+        std::cout << '\a' << std::flush;
+        return;
+    }
+
+    std::sort(result.matches.begin(), result.matches.end());
+    result.matches.erase(
+        std::unique(result.matches.begin(), result.matches.end()),
+        result.matches.end());
+
+    const std::string prefix = line.substr(result.replace_start, cursor - result.replace_start);
+    const std::string replacement = common_prefix(result.matches);
+
+    if (replacement.size() > prefix.size() || result.matches.size() == 1)
+    {
+        line.replace(result.replace_start, cursor - result.replace_start, replacement);
+        cursor = result.replace_start + replacement.size();
+
+        if (result.matches.size() == 1 && result.append_space)
+        {
+            if (cursor == line.size() || !std::isspace(static_cast<unsigned char>(line[cursor])))
+            {
+                line.insert(cursor, 1, ' ');
+                ++cursor;
+            }
+        }
+
+        redraw_line(prompt, line, cursor);
+        return;
+    }
+
+    std::cout << "\r\n";
+
+    for (const std::string& match : result.matches)
+    {
+        std::cout << match << "\r\n";
+    }
+
+    redraw_line(prompt, line, cursor);
+}
+
 //
 //!\brief Read a full line from standard input
 //
-static std::string read_line(const std::string& prompt)
+static bool read_line(const std::string& prompt, std::string& line)
 {
-    std::string line;
-
     std::cout << prompt;
-    std::getline(std::cin, line);
+    return static_cast<bool>(std::getline(std::cin, line));
+}
 
-    return line;
+//
+//!\brief Read a full editable line from standard input
+//
+static bool read_line(
+    const std::string& prompt,
+    std::string& line,
+    ReadLineSession& session,
+    const CompletionProvider& completion)
+{
+    line.clear();
+
+    if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO))
+    {
+        return read_line(prompt, line);
+    }
+
+    RawTerminalMode raw_mode;
+
+    if (!raw_mode.enabled())
+    {
+        return read_line(prompt, line);
+    }
+
+    std::cout << prompt << std::flush;
+
+    size_t cursor = 0;
+    size_t history_index = session.history.size();
+    std::string draft;
+
+    while (true)
+    {
+        char c = '\0';
+
+        if (!read_input_char(c))
+        {
+            std::cout << "\r\n";
+            return false;
+        }
+
+        if (c == '\r' || c == '\n')
+        {
+            std::cout << "\r\n";
+
+            if (!trim(line).empty() && (session.history.empty() || session.history.back() != line))
+            {
+                session.history.push_back(line);
+            }
+
+            return true;
+        }
+
+        if (c == '\t')
+        {
+            apply_completion(prompt, line, cursor, completion);
+            history_index = session.history.size();
+            draft = line;
+            continue;
+        }
+
+        if (c == 4)
+        {
+            if (line.empty())
+            {
+                std::cout << "\r\n";
+                return false;
+            }
+
+            if (cursor < line.size())
+            {
+                line.erase(cursor, 1);
+                history_index = session.history.size();
+                draft = line;
+                redraw_line(prompt, line, cursor);
+            }
+
+            continue;
+        }
+
+        if (c == 127 || c == '\b')
+        {
+            if (cursor > 0)
+            {
+                line.erase(cursor - 1, 1);
+                --cursor;
+                history_index = session.history.size();
+                draft = line;
+                redraw_line(prompt, line, cursor);
+            }
+
+            continue;
+        }
+
+        if (c == 27)
+        {
+            char seq1 = '\0';
+            char seq2 = '\0';
+
+            if (!read_input_char(seq1))
+            {
+                continue;
+            }
+
+            if (seq1 != '[' && seq1 != 'O')
+            {
+                continue;
+            }
+
+            if (!read_input_char(seq2))
+            {
+                continue;
+            }
+
+            if (seq2 == 'A')
+            {
+                if (!session.history.empty() && history_index > 0)
+                {
+                    if (history_index == session.history.size())
+                    {
+                        draft = line;
+                    }
+
+                    --history_index;
+                    line = session.history[history_index];
+                    cursor = line.size();
+                    redraw_line(prompt, line, cursor);
+                }
+
+                continue;
+            }
+
+            if (seq2 == 'B')
+            {
+                if (history_index < session.history.size())
+                {
+                    ++history_index;
+                    line = (history_index == session.history.size()) ? draft : session.history[history_index];
+                    cursor = line.size();
+                    redraw_line(prompt, line, cursor);
+                }
+
+                continue;
+            }
+
+            if (seq2 == 'C')
+            {
+                if (cursor < line.size())
+                {
+                    ++cursor;
+                    redraw_line(prompt, line, cursor);
+                }
+
+                continue;
+            }
+
+            if (seq2 == 'D')
+            {
+                if (cursor > 0)
+                {
+                    --cursor;
+                    redraw_line(prompt, line, cursor);
+                }
+
+                continue;
+            }
+
+            if (seq2 == 'H')
+            {
+                cursor = 0;
+                redraw_line(prompt, line, cursor);
+                continue;
+            }
+
+            if (seq2 == 'F')
+            {
+                cursor = line.size();
+                redraw_line(prompt, line, cursor);
+                continue;
+            }
+
+            if (seq2 == '3')
+            {
+                char seq3 = '\0';
+
+                if (read_input_char(seq3) && seq3 == '~' && cursor < line.size())
+                {
+                    line.erase(cursor, 1);
+                    history_index = session.history.size();
+                    draft = line;
+                    redraw_line(prompt, line, cursor);
+                }
+            }
+
+            continue;
+        }
+
+        if (std::isprint(static_cast<unsigned char>(c)))
+        {
+            line.insert(cursor, 1, c);
+            ++cursor;
+            redraw_line(prompt, line, cursor);
+            history_index = session.history.size();
+            draft = line;
+        }
+    }
+}
+
+//
+//!\brief Return the known shell command names
+//
+static const std::vector<std::string>& command_names()
+{
+    static const std::vector<std::string> names = {
+        "exit",
+        "help",
+        "info",
+        "list",
+        "quit",
+        "run"
+    };
+
+    return names;
 }
 
 //
@@ -150,6 +582,44 @@ static std::vector<std::string> split_command_line(const std::string& line)
     }
 
     return tokens;
+}
+
+//
+//!\brief Complete shell commands and registered algorithm names
+//
+static CompletionResult complete_command_line(
+    const OPERON::Operon& operon,
+    const std::string& line,
+    size_t cursor)
+{
+    CompletionResult result;
+    result.replace_start = current_token_start(line, cursor);
+
+    const std::string prefix = line.substr(result.replace_start, cursor - result.replace_start);
+    const std::vector<std::string> tokens_before =
+        split_command_line(line.substr(0, result.replace_start));
+    const size_t token_index = tokens_before.size();
+
+    std::vector<std::string> candidates;
+
+    if (token_index == 0)
+    {
+        candidates = command_names();
+    }
+    else if (token_index == 1 && (tokens_before[0] == "info" || tokens_before[0] == "run"))
+    {
+        candidates = operon.list_algorithms();
+    }
+
+    for (const std::string& candidate : candidates)
+    {
+        if (starts_with(candidate, prefix))
+        {
+            result.matches.push_back(candidate);
+        }
+    }
+
+    return result;
 }
 
 //
@@ -348,7 +818,12 @@ static bool prompt_missing_args(const OPERON::AlgorithmInfo& info, std::vector<O
         {
             try
             {
-                const std::string raw = read_line(param.name + " (" + type_to_string(param.type) + "): ");
+                std::string raw;
+
+                if (!read_line(param.name + " (" + type_to_string(param.type) + "): ", raw))
+                {
+                    return false;
+                }
 
                 if (!param.required && trim(raw).empty())
                 {
@@ -482,9 +957,22 @@ static int run_repl(OPERON::Operon& operon)
     std::cout << "Operon interactive shell" << std::endl;
     std::cout << "Type 'help' for usage, 'exit' to quit." << std::endl;
 
+    ReadLineSession input_session;
+    const CompletionProvider completion =
+        [&operon](const std::string& line, size_t cursor) -> CompletionResult
+        {
+            return complete_command_line(operon, line, cursor);
+        };
+
     while (true)
     {
-        std::string line = read_line("operon> ");
+        std::string line;
+
+        if (!read_line("operon> ", line, input_session, completion))
+        {
+            break;
+        }
+
         line = trim(line);
 
         if (line.empty())

@@ -14,7 +14,12 @@
 // own header
 #include "operon.hpp"
 
+// internal
+#include "algos/test/count_args.hpp"
+#include "algos/test/echo.hpp"
+
 // system
+#include <algorithm>
 #include <unordered_map>
 #include <utility>
 
@@ -64,38 +69,10 @@ OPERON::Operon& OPERON::Operon::operator=(Operon&& other) noexcept
 //
 bool OPERON::Operon::register_builtins()
 {
-    Algorithm echo;
-
-    echo.info.name = "test.echo";
-    echo.info.category = "test";
-    echo.info.brief = "Return the first input value unchanged";
-    echo.info.parameters = {
-        { "input", "Value to echo back", ValueType::String, true }
-    };
-    echo.info.return_type = ValueType::String;
-    echo.function = [](Context&, const std::vector<Value>& args) -> Result
-    {
-        if (args.empty())
-        {
-            return Result::error("E001_MISSING_ARGUMENT", "test.echo requires one argument");
-        }
-
-        return Result::success(args[0]);
-    };
+    const Algorithm echo = Algos::Test::make_echo_algorithm();
+    const Algorithm count_args = Algos::Test::make_count_args_algorithm();
 
     m_impl->m_algorithms[echo.info.name] = echo;
-
-    Algorithm count_args;
-
-    count_args.info.name = "test.count_args";
-    count_args.info.category = "test";
-    count_args.info.brief = "Return the number of supplied arguments";
-    count_args.info.return_type = ValueType::Int;
-    count_args.function = [](Context&, const std::vector<Value>& args) -> Result
-    {
-        return Result::success(OPERON::Value(static_cast<long long>(args.size())));
-    };
-
     m_impl->m_algorithms[count_args.info.name] = count_args;
 
     return true;
@@ -166,6 +143,8 @@ std::vector<std::string> OPERON::Operon::list_algorithms() const
     {
         names.push_back(entry.first);
     }
+
+    std::sort(names.begin(), names.end());
 
     return names;
 }
