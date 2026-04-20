@@ -43,6 +43,13 @@ blake2b_SUT.cpp.so,SRCS := \
 blake2b_SUT.cpp.so,DEPS := $(OPERON_LIBS)
 blake2b_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 
+X86CPPTARGETSOL += md5_SUT.cpp.so
+md5_SUT.cpp.so,SRCS := \
+		algos/hash/md5/md5.cpp \
+		algos/hash/md5/core.cpp
+md5_SUT.cpp.so,DEPS := $(OPERON_LIBS)
+md5_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+
 # ------------------------------
 # Test targets
 # ------------------------------
@@ -52,6 +59,12 @@ TEST_HASH_BLAKE2B,SRCS := test_hash_blake2b.cpp
 TEST_HASH_BLAKE2B,USRLIBS := blake2b_SUT.cpp.so
 TEST_HASH_BLAKE2B,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 TEST_HASH_BLAKE2B,LDFLAGS =
+
+X86CPPTARGET += TEST_HASH_MD5
+TEST_HASH_MD5,SRCS := test_hash_md5.cpp
+TEST_HASH_MD5,USRLIBS := md5_SUT.cpp.so
+TEST_HASH_MD5,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+TEST_HASH_MD5,LDFLAGS =
 
 # Include shocktest makefile from dep/shocktest symlink (no absolute path).
 include $(REPO_ROOT)/dep/shocktest/src/tst/ut/makefile.shocktest.mk

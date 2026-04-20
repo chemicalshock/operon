@@ -16,6 +16,7 @@
 
 // internal
 #include "algos/hash/blake2b/blake2b.hpp"
+#include "algos/hash/md5/md5.hpp"
 #include "algos/test/echo/echo.hpp"
 
 //
@@ -27,6 +28,6 @@ bool OPERON::Operon::register_builtins()
 
     ok = register_algorithm(Algos::Test::make_echo_algorithm()) && ok;
     ok = register_algorithm(Algos::Hash::Blake2b::make_algorithm()) && ok;
-
+    ok = register_algorithm(Algos::Hash::MD5::make_algorithm()) && ok;
     return ok;
 }

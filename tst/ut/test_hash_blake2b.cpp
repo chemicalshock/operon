@@ -14,8 +14,10 @@
 // shocktest
 #include "shocktest/shocktest.hpp"
 
-// internal
+// SUT
 #include "algos/hash/blake2b/blake2b.hpp"
+
+// internal
 #include "utils.hpp"
 
 namespace {
