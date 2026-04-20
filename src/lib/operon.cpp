@@ -15,8 +15,8 @@
 #include "operon.hpp"
 
 // internal
-#include "algos/test/count_args.hpp"
-#include "algos/test/echo.hpp"
+#include "algos/hash/blake2b/blake2b.hpp"
+#include "algos/test/echo/echo.hpp"
 
 // system
 #include <algorithm>
@@ -70,10 +70,10 @@ OPERON::Operon& OPERON::Operon::operator=(Operon&& other) noexcept
 bool OPERON::Operon::register_builtins()
 {
     const Algorithm echo = Algos::Test::make_echo_algorithm();
-    const Algorithm count_args = Algos::Test::make_count_args_algorithm();
+    const Algorithm blake2b = Algos::Hash::Blake2b::make_algorithm();
 
     m_impl->m_algorithms[echo.info.name] = echo;
-    m_impl->m_algorithms[count_args.info.name] = count_args;
+    m_impl->m_algorithms[blake2b.info.name] = blake2b;
 
     return true;
 }

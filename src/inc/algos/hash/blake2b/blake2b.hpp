@@ -1,7 +1,7 @@
 // -------------------------------------------------------------
 //
-//!\file count_args.hpp
-//!\brief Test count_args algorithm factory
+//!\file blake2b.hpp
+//!\brief BLAKE2b algorithm factory for Operon
 //!\author Colin J.D. Stewart
 //
 // -------------------------------------------------------------
@@ -11,17 +11,17 @@
 //
 // -------------------------------------------------------------
 
-#ifndef OPERON_ALGOS_TEST_COUNT_ARGS_HPP
-#define OPERON_ALGOS_TEST_COUNT_ARGS_HPP
+#ifndef OPERON_ALGOS_HASH_BLAKE2B_BLAKE2B_HPP
+#define OPERON_ALGOS_HASH_BLAKE2B_BLAKE2B_HPP
 
 // internal
 #include "algorithm.hpp"
 
-namespace OPERON::Algos::Test {
+namespace OPERON::Algos::Hash::Blake2b {
 
-    //!\brief Create the test.count_args algorithm
-    Algorithm make_count_args_algorithm();
+    //!\brief Create the hash.blake2b algorithm
+    Algorithm make_algorithm();
 
-} // namespace OPERON::Algos::Test
+} // namespace OPERON::Algos::Hash::Blake2b
 
-#endif // OPERON_ALGOS_TEST_COUNT_ARGS_HPP
+#endif
