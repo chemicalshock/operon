@@ -17,6 +17,7 @@
 // system
 #include <cstddef>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -81,6 +82,22 @@ namespace Utils {
             reinterpret_cast<const uint8_t*>(b.data()),
             b.size()
         );
+    }
+
+    //!\brief Generate cryptographically suitable random bytes
+    inline std::vector<uint8_t> random_bytes(size_t length)
+    {
+        std::vector<uint8_t> output;
+        std::random_device random_device;
+
+        output.resize(length);
+
+        for (size_t i = 0; i < length; ++i)
+        {
+            output[i] = static_cast<uint8_t>(random_device() & 0xFFU);
+        }
+
+        return output;
     }
 
 } // namespace Utils
