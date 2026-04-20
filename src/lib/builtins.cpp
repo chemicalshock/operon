@@ -1,0 +1,32 @@
+// -------------------------------------------------------------
+//
+//!\file builtins.cpp
+//!\brief Built-in algorithm registration for Operon
+//!\author Colin J.D. Stewart
+//
+// -------------------------------------------------------------
+//
+//           Copyright (c) 2026. Colin J.D. Stewart.
+//                   All rights reserved
+//
+// -------------------------------------------------------------
+
+// own header
+#include "operon.hpp"
+
+// internal
+#include "algos/hash/blake2b/blake2b.hpp"
+#include "algos/test/echo/echo.hpp"
+
+//
+//!\brief Register built-in algorithms with the runtime
+//
+bool OPERON::Operon::register_builtins()
+{
+    bool ok = true;
+
+    ok = register_algorithm(Algos::Test::make_echo_algorithm()) && ok;
+    ok = register_algorithm(Algos::Hash::Blake2b::make_algorithm()) && ok;
+
+    return ok;
+}

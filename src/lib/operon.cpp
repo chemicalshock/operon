@@ -14,10 +14,6 @@
 // own header
 #include "operon.hpp"
 
-// internal
-#include "algos/hash/blake2b/blake2b.hpp"
-#include "algos/test/echo/echo.hpp"
-
 // system
 #include <algorithm>
 #include <unordered_map>
@@ -36,6 +32,7 @@ public:
 OPERON::Operon::Operon()
     : m_impl(std::make_unique<Impl>())
 {
+    m_impl->m_context.m_runtime = this;
 }
 
 //
@@ -49,6 +46,10 @@ OPERON::Operon::~Operon() = default;
 OPERON::Operon::Operon(Operon&& other) noexcept
     : m_impl(std::move(other.m_impl))
 {
+    if (m_impl)
+    {
+        m_impl->m_context.m_runtime = this;
+    }
 }
 
 //
@@ -59,22 +60,27 @@ OPERON::Operon& OPERON::Operon::operator=(Operon&& other) noexcept
     if (this != &other)
     {
         m_impl = std::move(other.m_impl);
+
+        if (m_impl)
+        {
+            m_impl->m_context.m_runtime = this;
+        }
     }
 
     return *this;
 }
 
 //
-//!\brief Register built-in algorithms with the runtime
+//!\brief Register a single algorithm with the runtime
 //
-bool OPERON::Operon::register_builtins()
+bool OPERON::Operon::register_algorithm(const Algorithm& algorithm)
 {
-    const Algorithm echo = Algos::Test::make_echo_algorithm();
-    const Algorithm blake2b = Algos::Hash::Blake2b::make_algorithm();
+    if (algorithm.info.name.empty() || !algorithm.function)
+    {
+        return false;
+    }
 
-    m_impl->m_algorithms[echo.info.name] = echo;
-    m_impl->m_algorithms[blake2b.info.name] = blake2b;
-
+    m_impl->m_algorithms[algorithm.info.name] = algorithm;
     return true;
 }
 

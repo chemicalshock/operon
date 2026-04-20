@@ -31,7 +31,7 @@ namespace OPERON {
     class Registry;
 
     //!\brief Main public interface for the Operon algorithm runtime
-    class Operon
+    class Operon : private Context::Runtime
     {
     public:
         //!\brief Construct a new Operon runtime
@@ -55,6 +55,9 @@ namespace OPERON {
         //!\brief Register built-in algorithms with the runtime
         bool register_builtins();
 
+        //!\brief Register a single algorithm with the runtime
+        bool register_algorithm(const Algorithm& algorithm);
+
         //!\brief Register a single algorithm registry with the runtime
         bool register_registry(std::shared_ptr<Registry> registry);
 
@@ -62,19 +65,19 @@ namespace OPERON {
         Result execute(const std::string& algorithm_name, std::initializer_list<Value> args);
 
         //!\brief Execute an algorithm by name using positional arguments
-        Result execute(const std::string& algorithm_name, const std::vector<Value>& args = {});
+        Result execute(const std::string& algorithm_name, const std::vector<Value>& args = {}) override;
 
         //!\brief Execute an algorithm by name using a single input value
         Result execute(const std::string& algorithm_name, const Value& arg);
 
         //!\brief Check whether an algorithm exists
-        bool has_algorithm(const std::string& algorithm_name) const;
+        bool has_algorithm(const std::string& algorithm_name) const override;
 
         //!\brief Return a list of all registered algorithm names
         std::vector<std::string> list_algorithms() const;
 
         //!\brief Return information for a specific algorithm
-        bool get_algorithm_info(const std::string& algorithm_name, AlgorithmInfo& info) const;
+        bool get_algorithm_info(const std::string& algorithm_name, AlgorithmInfo& info) const override;
 
         //!\brief Return the runtime context
         Context& context();

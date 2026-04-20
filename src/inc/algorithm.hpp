@@ -60,6 +60,9 @@ namespace OPERON {
 
         //!\brief Return type
         ValueType return_type = ValueType::Null;
+
+        //!\brief Required algorithms
+        std::vector<std::string> requirements;
     };
 
     struct Algorithm

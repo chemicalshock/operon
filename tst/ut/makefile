@@ -9,6 +9,8 @@ REPO_ROOT := $(if $(DETECTED_REPO_ROOT),$(DETECTED_REPO_ROOT),$(firstword $(REPO
 
 X86CPPTARGETSOL ?=
 
+OPERON_LIBS := value_SUT.cpp.so context_SUT.cpp.so
+
 # ------------------------------
 # SUT targets
 # ------------------------------
@@ -18,9 +20,16 @@ value_SUT.cpp.so,SRCS := value.cpp
 value_SUT.cpp.so,DEPS :=
 value_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 
+X86CPPTARGETSOL += context_SUT.cpp.so
+context_SUT.cpp.so,SRCS := context.cpp
+context_SUT.cpp.so,DEPS :=
+context_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+
 X86CPPTARGETSOL += operon_SUT.cpp.so
 operon_SUT.cpp.so,SRCS := operon.cpp
-operon_SUT.cpp.so,DEPS := value_SUT.cpp.so
+operon_SUT.cpp.so,DEPS := \
+		value_SUT.cpp.so \
+		context_SUT.cpp.so
 operon_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 
 # ------------------------------
@@ -31,7 +40,7 @@ X86CPPTARGETSOL += blake2b_SUT.cpp.so
 blake2b_SUT.cpp.so,SRCS := \
 		algos/hash/blake2b/blake2b.cpp \
 		algos/hash/blake2b/core.cpp
-blake2b_SUT.cpp.so,DEPS := value_SUT.cpp.so
+blake2b_SUT.cpp.so,DEPS := $(OPERON_LIBS)
 blake2b_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 
 # ------------------------------
