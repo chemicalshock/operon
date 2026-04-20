@@ -50,6 +50,12 @@ md5_SUT.cpp.so,SRCS := \
 md5_SUT.cpp.so,DEPS := $(OPERON_LIBS)
 md5_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 
+X86CPPTARGETSOL += constant_time_eq_SUT.cpp.so
+constant_time_eq_SUT.cpp.so,SRCS := \
+		algos/util/constant_time_eq/constant_time_eq.cpp
+constant_time_eq_SUT.cpp.so,DEPS := $(OPERON_LIBS)
+constant_time_eq_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+
 # ------------------------------
 # Test targets
 # ------------------------------
@@ -65,6 +71,12 @@ TEST_HASH_MD5,SRCS := test_hash_md5.cpp
 TEST_HASH_MD5,USRLIBS := md5_SUT.cpp.so
 TEST_HASH_MD5,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 TEST_HASH_MD5,LDFLAGS =
+
+X86CPPTARGET += TEST_UTIL_CONSTANT_TIME_EQ
+TEST_UTIL_CONSTANT_TIME_EQ,SRCS := test_util_constant_time_eq.cpp
+TEST_UTIL_CONSTANT_TIME_EQ,USRLIBS := constant_time_eq_SUT.cpp.so
+TEST_UTIL_CONSTANT_TIME_EQ,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+TEST_UTIL_CONSTANT_TIME_EQ,LDFLAGS =
 
 # Include shocktest makefile from dep/shocktest symlink (no absolute path).
 include $(REPO_ROOT)/dep/shocktest/src/tst/ut/makefile.shocktest.mk
