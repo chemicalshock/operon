@@ -62,6 +62,13 @@ random_bytes_SUT.cpp.so,SRCS := \
 random_bytes_SUT.cpp.so,DEPS := $(OPERON_LIBS)
 random_bytes_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 
+X86CPPTARGETSOL += argon2_SUT.cpp.so
+argon2_SUT.cpp.so,SRCS := \
+		algos/hash/argon2/core.cpp \
+		algos/hash/argon2/hash.cpp
+argon2_SUT.cpp.so,DEPS := $(OPERON_LIBS) blake2b_SUT.cpp.so
+argon2_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+
 # ------------------------------
 # Test targets
 # ------------------------------
@@ -89,6 +96,13 @@ TEST_RNG_RANDOM_BYTES,SRCS := test_rng_random_bytes.cpp
 TEST_RNG_RANDOM_BYTES,USRLIBS := random_bytes_SUT.cpp.so
 TEST_RNG_RANDOM_BYTES,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 TEST_RNG_RANDOM_BYTES,LDFLAGS =
+
+X86CPPTARGET += TEST_HASH_ARGON2
+TEST_HASH_ARGON2,SRCS := test_hash_argon2.cpp
+TEST_HASH_ARGON2,USRLIBS := argon2_SUT.cpp.so
+TEST_HASH_ARGON2,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+TEST_HASH_ARGON2,LDFLAGS =
+
 
 
 # Include shocktest makefile from dep/shocktest symlink (no absolute path).
