@@ -103,6 +103,12 @@ TEST_HASH_ARGON2,USRLIBS := argon2_SUT.cpp.so
 TEST_HASH_ARGON2,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 TEST_HASH_ARGON2,LDFLAGS =
 
+X86CPPTARGET += TEST_UTILS
+TEST_UTILS,SRCS := test_utils.cpp
+TEST_UTILS,USRLIBS :=
+TEST_UTILS,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+TEST_UTILS,LDFLAGS =
+
 
 
 # Include shocktest makefile from dep/shocktest symlink (no absolute path).

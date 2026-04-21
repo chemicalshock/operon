@@ -20,6 +20,8 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <sstream>
+#include <iomanip>
 
 namespace OPERON {
 
@@ -98,6 +100,52 @@ namespace Utils {
         }
 
         return output;
+    }
+
+    //!\brief Convert a byte buffer to a lowercase hexadecimal string
+    inline std::string buffer_to_hex(const std::vector<uint8_t>& buffer)
+    {
+        std::ostringstream stream;
+
+        for (uint8_t byte : buffer)
+        {
+            stream << std::hex
+                << std::setw(2)
+                << std::setfill('0')
+                << static_cast<int>(byte);
+        }
+
+        return stream.str();
+    }
+
+    //!\brief Return true when a byte buffer looks like plain text
+    inline bool buffer_is_text(const std::vector<uint8_t>& buffer)
+    {
+        for (uint8_t byte : buffer)
+        {
+            if (byte == '\n' || byte == '\r' || byte == '\t')
+            {
+                continue;
+            }
+
+            if (byte < 0x20U || byte > 0x7EU)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    //!\brief Render a byte buffer as plain text when safe, otherwise hex
+    inline std::string buffer_to_display_string(const std::vector<uint8_t>& buffer)
+    {
+        if (buffer_is_text(buffer))
+        {
+            return std::string(buffer.begin(), buffer.end());
+        }
+
+        return buffer_to_hex(buffer);
     }
 
 } // namespace Utils

@@ -278,69 +278,6 @@ namespace
     }
 
     //
-    //!\brief Fill one input block for Argon2i addressing
-    //
-    static void make_address_input_block(
-        OPERON::Algos::Hash::Argon2::Core::Block& block,
-        uint32_t pass,
-        uint32_t lane,
-        uint32_t slice,
-        uint32_t memory_blocks,
-        uint32_t time_cost,
-        uint32_t variant,
-        uint32_t counter
-    )
-    {
-        std::memset(block.v, 0, sizeof(block.v));
-
-        block.v[0] = pass;
-        block.v[1] = lane;
-        block.v[2] = slice;
-        block.v[3] = memory_blocks;
-        block.v[4] = time_cost;
-        block.v[5] = variant;
-        block.v[6] = counter;
-    }
-
-    //
-    //!\brief Generate one address block for Argon2i addressing
-    //
-    static OPERON::Algos::Hash::Argon2::Core::Block make_address_block(
-        uint32_t pass,
-        uint32_t lane,
-        uint32_t slice,
-        uint32_t memory_blocks,
-        uint32_t time_cost,
-        uint32_t variant,
-        uint32_t counter
-    )
-    {
-        using Block = OPERON::Algos::Hash::Argon2::Core::Block;
-
-        Block zero_block;
-        Block input_block;
-        Block tmp_block;
-        Block address_block;
-
-        std::memset(zero_block.v, 0, sizeof(zero_block.v));
-        make_address_input_block(
-            input_block,
-            pass,
-            lane,
-            slice,
-            memory_blocks,
-            time_cost,
-            variant,
-            counter
-        );
-
-        G(tmp_block, zero_block, input_block);
-        G(address_block, zero_block, tmp_block);
-
-        return address_block;
-    }
-
-    //
     //!\brief Return true if this position uses Argon2i-style addressing in Argon2id
     //
     static bool use_argon2i_addressing(

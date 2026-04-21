@@ -13,6 +13,7 @@
 
 // own header
 #include "operon.hpp"
+#include "utils.hpp"
 
 // system
 #include <algorithm>
@@ -778,7 +779,7 @@ static std::string value_to_string(const OPERON::Value& value)
         case OPERON::ValueType::Buffer:
         {
             const OPERON::Value::Buffer& buffer = value.as_buffer();
-            return std::string(buffer.begin(), buffer.end());
+            return OPERON::Utils::buffer_to_display_string(buffer);
         }
 
         case OPERON::ValueType::Array:
