@@ -179,7 +179,7 @@ SHOCKTEST_GOODWEATHER(argon2_third_block_differs_from_first_two)
     EXPECT_TRUE(first != third);
 }
 
-SHOCKTEST_BADWEATHER(hash_argon2id_matches_rfc9106_vector)
+SHOCKTEST_GOODWEATHER(hash_argon2id_matches_rfc9106_vector)
 {
     const OPERON::Value::Buffer digest = run_argon2id_raw();
 

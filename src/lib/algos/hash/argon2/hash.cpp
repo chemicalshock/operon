@@ -142,38 +142,32 @@ std::vector<uint8_t> OPERON::Algos::Hash::Argon2::Core::blake2b_long(
         64
     );
 
+    const size_t chunk_count = ((output_length + 31) / 32) - 2;
     size_t offset = 0;
 
-    // copy first 32 bytes of V1
-    std::memcpy(out.data(), V.data(), 32);
-    offset += 32;
-
-    // subsequent blocks
-    while (offset + 32 <= output_length)
+    for (size_t chunk = 0; chunk < chunk_count; ++chunk)
     {
-        V = OPERON::Algos::Hash::Blake2b::Core::hash(
-            V.data(),
-            V.size(),
-            64
-        );
-
         std::memcpy(out.data() + offset, V.data(), 32);
         offset += 32;
+
+        if ((chunk + 1) < chunk_count)
+        {
+            V = OPERON::Algos::Hash::Blake2b::Core::hash(
+                V.data(),
+                V.size(),
+                64
+            );
+        }
     }
 
-    // final block
     const size_t remaining = output_length - offset;
+    const std::vector<uint8_t> last = OPERON::Algos::Hash::Blake2b::Core::hash(
+        V.data(),
+        V.size(),
+        remaining
+    );
 
-    if (remaining > 0)
-    {
-        V = OPERON::Algos::Hash::Blake2b::Core::hash(
-            V.data(),
-            V.size(),
-            remaining
-        );
-
-        std::memcpy(out.data() + offset, V.data(), remaining);
-    }
+    std::memcpy(out.data() + offset, last.data(), remaining);
 
     return out;
 }

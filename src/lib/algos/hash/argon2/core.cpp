@@ -48,19 +48,50 @@ namespace
     //
     //!\brief Argon2/BLAKE2 G function on four words
     //
+    static inline uint64_t lower32_product(uint64_t a, uint64_t b)
+    {
+        return
+            static_cast<uint64_t>(static_cast<uint32_t>(a)) *
+            static_cast<uint64_t>(static_cast<uint32_t>(b));
+    }
+
+    //
+    //!\brief Argon2/BLAKE2 G function on four words
+    //
     static inline void G_round(uint64_t& a, uint64_t& b, uint64_t& c, uint64_t& d)
     {
-        a = a + b + 2ULL * (a & b);
+        a = a + b + 2ULL * lower32_product(a, b);
         d = rotr64(d ^ a, 32);
 
-        c = c + d + 2ULL * (c & d);
+        c = c + d + 2ULL * lower32_product(c, d);
         b = rotr64(b ^ c, 24);
 
-        a = a + b + 2ULL * (a & b);
+        a = a + b + 2ULL * lower32_product(a, b);
         d = rotr64(d ^ a, 16);
 
-        c = c + d + 2ULL * (c & d);
+        c = c + d + 2ULL * lower32_product(c, d);
         b = rotr64(b ^ c, 63);
+    }
+
+    //
+    //!\brief One BLAKE2 round without message words
+    //
+    static inline void blake2_round_nomsg(
+        uint64_t& v0, uint64_t& v1, uint64_t& v2, uint64_t& v3,
+        uint64_t& v4, uint64_t& v5, uint64_t& v6, uint64_t& v7,
+        uint64_t& v8, uint64_t& v9, uint64_t& v10, uint64_t& v11,
+        uint64_t& v12, uint64_t& v13, uint64_t& v14, uint64_t& v15
+    )
+    {
+        G_round(v0, v4, v8, v12);
+        G_round(v1, v5, v9, v13);
+        G_round(v2, v6, v10, v14);
+        G_round(v3, v7, v11, v15);
+
+        G_round(v0, v5, v10, v15);
+        G_round(v1, v6, v11, v12);
+        G_round(v2, v7, v8, v13);
+        G_round(v3, v4, v9, v14);
     }
 
     //
@@ -68,77 +99,32 @@ namespace
     //
     static void P(OPERON::Algos::Hash::Argon2::Core::Block& x)
     {
-        // Treat block as 8x8 matrix of 16-byte registers (2 uint64 each)
-
-        auto Gx = [](uint64_t& a0, uint64_t& a1,
-                    uint64_t& b0, uint64_t& b1,
-                    uint64_t& c0, uint64_t& c1,
-                    uint64_t& d0, uint64_t& d1)
+        for (size_t row = 0; row < 8; ++row)
         {
-            G_round(a0, b0, c0, d0);
-            G_round(a1, b1, c1, d1);
-        };
+            const size_t base = row * 16;
 
-        // --- Column rounds ---
-        for (int col = 0; col < 8; ++col)
-        {
-            int i = col * 16;
-
-            Gx(x.v[i + 0],  x.v[i + 1],
-            x.v[i + 16], x.v[i + 17],
-            x.v[i + 32], x.v[i + 33],
-            x.v[i + 48], x.v[i + 49]);
-
-            Gx(x.v[i + 2],  x.v[i + 3],
-            x.v[i + 18], x.v[i + 19],
-            x.v[i + 34], x.v[i + 35],
-            x.v[i + 50], x.v[i + 51]);
-
-            Gx(x.v[i + 4],  x.v[i + 5],
-            x.v[i + 20], x.v[i + 21],
-            x.v[i + 36], x.v[i + 37],
-            x.v[i + 52], x.v[i + 53]);
-
-            Gx(x.v[i + 6],  x.v[i + 7],
-            x.v[i + 22], x.v[i + 23],
-            x.v[i + 38], x.v[i + 39],
-            x.v[i + 54], x.v[i + 55]);
-
-            Gx(x.v[i + 8],  x.v[i + 9],
-            x.v[i + 24], x.v[i + 25],
-            x.v[i + 40], x.v[i + 41],
-            x.v[i + 56], x.v[i + 57]);
-
-            Gx(x.v[i + 10], x.v[i + 11],
-            x.v[i + 26], x.v[i + 27],
-            x.v[i + 42], x.v[i + 43],
-            x.v[i + 58], x.v[i + 59]);
-
-            Gx(x.v[i + 12], x.v[i + 13],
-            x.v[i + 28], x.v[i + 29],
-            x.v[i + 44], x.v[i + 45],
-            x.v[i + 60], x.v[i + 61]);
-
-            Gx(x.v[i + 14], x.v[i + 15],
-            x.v[i + 30], x.v[i + 31],
-            x.v[i + 46], x.v[i + 47],
-            x.v[i + 62], x.v[i + 63]);
+            blake2_round_nomsg(
+                x.v[base + 0], x.v[base + 1], x.v[base + 2], x.v[base + 3],
+                x.v[base + 4], x.v[base + 5], x.v[base + 6], x.v[base + 7],
+                x.v[base + 8], x.v[base + 9], x.v[base + 10], x.v[base + 11],
+                x.v[base + 12], x.v[base + 13], x.v[base + 14], x.v[base + 15]
+            );
         }
 
-        // --- Row rounds ---
-        for (int row = 0; row < 8; ++row)
+        for (size_t column = 0; column < 8; ++column)
         {
-            int base = row * 16;
+            const size_t base = column * 2;
 
-            Gx(x.v[base + 0],  x.v[base + 1],
-            x.v[base + 2],  x.v[base + 3],
-            x.v[base + 4],  x.v[base + 5],
-            x.v[base + 6],  x.v[base + 7]);
-
-            Gx(x.v[base + 8],  x.v[base + 9],
-            x.v[base + 10], x.v[base + 11],
-            x.v[base + 12], x.v[base + 13],
-            x.v[base + 14], x.v[base + 15]);
+            blake2_round_nomsg(
+                x.v[base + 0], x.v[base + 1],
+                x.v[base + 16], x.v[base + 17],
+                x.v[base + 32], x.v[base + 33],
+                x.v[base + 48], x.v[base + 49],
+                x.v[base + 64], x.v[base + 65],
+                x.v[base + 80], x.v[base + 81],
+                x.v[base + 96], x.v[base + 97],
+                x.v[base + 112], x.v[base + 113]
+            );
         }
     }
 
