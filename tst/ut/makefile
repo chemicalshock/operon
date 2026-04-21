@@ -50,6 +50,13 @@ md5_SUT.cpp.so,SRCS := \
 md5_SUT.cpp.so,DEPS := $(OPERON_LIBS)
 md5_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 
+X86CPPTARGETSOL += crc32_SUT.cpp.so
+crc32_SUT.cpp.so,SRCS := \
+		algos/hash/crc32/crc32.cpp \
+		algos/hash/crc32/core.cpp
+crc32_SUT.cpp.so,DEPS := $(OPERON_LIBS)
+crc32_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+
 X86CPPTARGETSOL += constant_time_eq_SUT.cpp.so
 constant_time_eq_SUT.cpp.so,SRCS := \
 		algos/util/constant_time_eq/constant_time_eq.cpp
@@ -84,6 +91,12 @@ TEST_HASH_MD5,SRCS := test_hash_md5.cpp
 TEST_HASH_MD5,USRLIBS := md5_SUT.cpp.so
 TEST_HASH_MD5,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 TEST_HASH_MD5,LDFLAGS =
+
+X86CPPTARGET += TEST_HASH_CRC32
+TEST_HASH_CRC32,SRCS := test_hash_crc32.cpp
+TEST_HASH_CRC32,USRLIBS := crc32_SUT.cpp.so
+TEST_HASH_CRC32,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+TEST_HASH_CRC32,LDFLAGS =
 
 X86CPPTARGET += TEST_UTIL_CONSTANT_TIME_EQ
 TEST_UTIL_CONSTANT_TIME_EQ,SRCS := test_util_constant_time_eq.cpp

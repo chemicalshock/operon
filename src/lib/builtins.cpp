@@ -16,6 +16,7 @@
 
 // internal
 #include "algos/hash/blake2b/blake2b.hpp"
+#include "algos/hash/crc32/crc32.hpp"
 #include "algos/hash/md5/md5.hpp"
 #include "algos/test/echo/echo.hpp"
 #include "algos/rng/random_bytes/random_bytes.hpp"
@@ -30,6 +31,7 @@ bool OPERON::Operon::register_builtins()
 
     ok = register_algorithm(Algos::Test::make_echo_algorithm()) && ok;
     ok = register_algorithm(Algos::Hash::Blake2b::make_algorithm()) && ok;
+    ok = register_algorithm(Algos::Hash::CRC32::make_algorithm()) && ok;
     ok = register_algorithm(Algos::Hash::MD5::make_algorithm()) && ok;
     ok = register_algorithm(Algos::Rng::RandomBytes::make_algorithm()) && ok;
     ok = register_algorithm(Algos::Hash::Argon2::make_algorithm()) && ok;
