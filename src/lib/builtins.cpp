@@ -15,6 +15,7 @@
 #include "operon.hpp"
 
 // internal
+#include "algos/aead/chacha20poly1305/chacha20poly1305.hpp"
 #include "algos/hash/blake2b/blake2b.hpp"
 #include "algos/hash/crc32/crc32.hpp"
 #include "algos/hash/md5/md5.hpp"
@@ -30,6 +31,8 @@ bool OPERON::Operon::register_builtins()
     bool ok = true;
 
     ok = register_algorithm(Algos::Test::make_echo_algorithm()) && ok;
+    ok = register_algorithm(Algos::Aead::ChaCha20Poly1305::make_encrypt_algorithm()) && ok;
+    ok = register_algorithm(Algos::Aead::ChaCha20Poly1305::make_decrypt_algorithm()) && ok;
     ok = register_algorithm(Algos::Hash::Blake2b::make_algorithm()) && ok;
     ok = register_algorithm(Algos::Hash::CRC32::make_algorithm()) && ok;
     ok = register_algorithm(Algos::Hash::MD5::make_algorithm()) && ok;

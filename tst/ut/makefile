@@ -36,6 +36,13 @@ operon_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 # Algorithm targets
 # ------------------------------
 
+X86CPPTARGETSOL += chacha20poly1305_SUT.cpp.so
+chacha20poly1305_SUT.cpp.so,SRCS := \
+		algos/aead/chacha20poly1305/chacha20poly1305.cpp \
+		algos/aead/chacha20poly1305/core.cpp
+chacha20poly1305_SUT.cpp.so,DEPS := $(OPERON_LIBS)
+chacha20poly1305_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+
 X86CPPTARGETSOL += blake2b_SUT.cpp.so
 blake2b_SUT.cpp.so,SRCS := \
 		algos/hash/blake2b/blake2b.cpp \
@@ -79,6 +86,12 @@ argon2_SUT.cpp.so,CPPFLAGS = $(GLOBAL_CPPFLAGS)
 # ------------------------------
 # Test targets
 # ------------------------------
+
+X86CPPTARGET += TEST_AEAD_CHACHA20POLY1305
+TEST_AEAD_CHACHA20POLY1305,SRCS := test_aead_chacha20poly1305.cpp
+TEST_AEAD_CHACHA20POLY1305,USRLIBS := chacha20poly1305_SUT.cpp.so
+TEST_AEAD_CHACHA20POLY1305,CPPFLAGS = $(GLOBAL_CPPFLAGS)
+TEST_AEAD_CHACHA20POLY1305,LDFLAGS =
 
 X86CPPTARGET += TEST_HASH_BLAKE2B
 TEST_HASH_BLAKE2B,SRCS := test_hash_blake2b.cpp
