@@ -18,7 +18,7 @@ BUILD_SHARED ?= 1
 BUILD_M32 ?= 0
 BUILD_M64 ?= 1
 
-CXX_STD ?= c++20
+CXX_STD ?= c++17
 MODE ?= debug
 
 USER_CPPFLAGS :=
